@@ -1,0 +1,17 @@
+/* Simple flat color effect */
+
+// Variables //
+
+struct PixelInputType
+{
+	float4 position : SV_POSITION;
+	float4 color : COLOR;
+};
+
+
+// Functions //
+
+float4 PS_Main(PixelInputType input) : SV_TARGET
+{
+	return input.color;
+}

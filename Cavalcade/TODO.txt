@@ -1,0 +1,12 @@
+// Graphics //
+Support multiple monitors
+ - Allow user to select the monitor to play on through settings
+
+// Input //
+Support RAW input
+Support XBox 360 controller through XInput
+
+// Audio //
+
+
+// Physics //
