@@ -140,7 +140,6 @@ bool ObjLoader::LoadFromFile(wchar_t* filename)
 	}
 
 	for (int f = 0; f < (int)faces.size(); f+=3)
-	//for (int f = 0; f < static_cast<int>(numFaces); ++f)
 	{
 		m_vertices[vIndex] = verts[(faces[f] - 1) * 3 + 0];
 		vIndex++;

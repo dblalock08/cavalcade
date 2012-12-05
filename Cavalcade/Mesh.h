@@ -22,7 +22,6 @@ private:
 		XMFLOAT2 texture;
 		XMFLOAT3 normal;
 	};
-#pragma pack(pop)
 
 	struct MeshType
 	{
@@ -30,6 +29,7 @@ private:
 		float tu, tv;	// Texture coordinates
 		float nx, ny, nz;
 	};
+#pragma pack(pop)
 
 public:
 	Mesh();
