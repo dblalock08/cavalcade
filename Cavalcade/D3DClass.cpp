@@ -5,9 +5,9 @@
 /****************************************/
 #include "D3DClass.h"
 
-D3DClass::D3DClass() : m_swapChain(0), m_device(0), m_deviceContext(0),
-					   m_renderTargetView(0), m_depthStencilBuffer(0),
-					   m_depthStencilState(0), m_depthStencilView(0), m_rasterState(0)
+D3DClass::D3DClass() : m_swapChain(0), m_device(0), m_deviceContext(0), m_renderTargetView(0), m_depthStencilBuffer(0),
+					   m_depthStencilState(0), m_depthDisabledStencilState(0), m_depthStencilView(0), m_rasterState(0),
+					   m_alphaEnableBlendState(0), m_alphaDisableBlendState(0)
 {
 
 }
@@ -38,6 +38,8 @@ bool D3DClass::Initialize(HWND hwnd, HINSTANCE hInstance)
 	D3D11_RASTERIZER_DESC rasterDesc;
 	D3D11_VIEWPORT viewport;
 	float fieldOfView, screenAspect;
+	D3D11_DEPTH_STENCIL_DESC depthDisabledStencilDesc;
+	D3D11_BLEND_DESC blendStateDesc;
 
 	D3D_DRIVER_TYPE driverTypes[] =
 	{
@@ -189,13 +191,6 @@ bool D3DClass::Initialize(HWND hwnd, HINSTANCE hInstance)
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	swapChainDesc.Flags = 0;
 
-	/*
-	//featureLevel = D3D_FEATURE_LEVEL_11_0;
-	featureLevel = D3D_FEATURE_LEVEL_10_0;
-	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, &featureLevel,
-										   1, D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain,
-										   &m_device, NULL, &m_deviceContext);
-	*/
 	creationFlags = 0;
 	for (driver = 0; driver < totalDriverTypes; ++driver)
 	{
@@ -336,8 +331,57 @@ bool D3DClass::Initialize(HWND hwnd, HINSTANCE hInstance)
 	XMMATRIX worldMatrix = XMMatrixIdentity();
 	XMStoreFloat4x4(&m_worldMatrix, worldMatrix);
 
-	//XMMATRIX ortho = XMMatrixOrthographicLH(static_cast<float>(width), static_cast<float>(height), 0.1f, 1000.0f);
-	//XMStoreFloat4x4(&m_orthoMatrix, ortho);
+	// Create orthographic projection matrix for 2D
+	XMMATRIX ortho = XMMatrixOrthographicLH(static_cast<float>(width), static_cast<float>(height), 0.1f, 1000.0f);
+	XMStoreFloat4x4(&m_orthoMatrix, ortho);
+
+	ZeroMemory(&depthDisabledStencilDesc, sizeof(depthDisabledStencilDesc));
+	depthDisabledStencilDesc.DepthEnable = false;
+	depthDisabledStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthDisabledStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthDisabledStencilDesc.StencilEnable = true;
+	depthDisabledStencilDesc.StencilReadMask = 0xFF;
+	depthDisabledStencilDesc.StencilWriteMask = 0xFF;
+
+	depthDisabledStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	depthDisabledStencilDesc.FrontFace.StencilPassOp =D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	depthDisabledStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	depthDisabledStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	result = m_device->CreateDepthStencilState(&depthDisabledStencilDesc, &m_depthDisabledStencilState);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	ZeroMemory(&blendStateDesc, sizeof(D3D11_BLEND_DESC));
+	blendStateDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendStateDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = 0x0F;
+
+	result = m_device->CreateBlendState(&blendStateDesc, &m_alphaEnableBlendState);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	blendStateDesc.RenderTarget[0].BlendEnable = FALSE;
+
+	result = m_device->CreateBlendState(&blendStateDesc, &m_alphaEnableBlendState);
+	if (FAILED(result))
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -347,6 +391,18 @@ void D3DClass::Shutdown()
 	if (m_swapChain)
 	{
 		m_swapChain->SetFullscreenState(false, NULL);
+	}
+
+	if (m_alphaEnableBlendState)
+	{
+		m_alphaEnableBlendState->Release();
+		m_alphaEnableBlendState = 0;
+	}
+
+	if (m_alphaDisableBlendState)
+	{
+		m_alphaDisableBlendState->Release();
+		m_alphaDisableBlendState = 0;
 	}
 
 	if (m_rasterState)
@@ -400,6 +456,34 @@ void D3DClass::Shutdown()
 	return;
 }
 
+void D3DClass::AlphaBlendOn()
+{
+	float blendFactor[4];
+
+	blendFactor[0] = 0.0f;
+	blendFactor[1] = 0.0f;
+	blendFactor[2] = 0.0f;
+	blendFactor[3] = 0.0f;
+
+	m_deviceContext->OMSetBlendState(m_alphaEnableBlendState, blendFactor, 0xFFFFFFFF);
+
+	return;
+}
+
+void D3DClass::AlphaBlendOff()
+{
+	float blendFactor[4];
+
+	blendFactor[0] = 0.0f;
+	blendFactor[1] = 0.0f;
+	blendFactor[2] = 0.0f;
+	blendFactor[3] = 0.0f;
+
+	m_deviceContext->OMSetBlendState(m_alphaDisableBlendState, blendFactor, 0xFFFFFFFF);
+
+	return;
+}
+
 void D3DClass::BeginScene()
 {
 	float color[4];
@@ -431,7 +515,20 @@ void D3DClass::EndScene()
 	return;
 }
 
-// Access Functions //
+void D3DClass::ZBufferEnable()
+{
+	m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 1);
+
+	return;
+}
+
+void D3DClass::ZBufferDisable()
+{
+	m_deviceContext->OMSetDepthStencilState(m_depthDisabledStencilState, 1);
+
+	return;
+}
+
 void D3DClass::GetProjectionMatrix(XMFLOAT4X4& projectionMatrix)
 {
 	projectionMatrix = m_projectionMatrix;

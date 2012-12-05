@@ -9,10 +9,9 @@
 #include "D3DClass.h"
 #include "CameraClass.h"
 #include "ShaderManager.h"
-#include "Model.h"
-
-// Lighting //
 #include "AmbientLight.h"
+#include "Model.h"
+#include "TextClass.h"
 
 #include "settings.h"
 
@@ -22,7 +21,7 @@ public:
 	Graphics();
 	~Graphics();
 
-	bool Initialize(HWND, HINSTANCE);
+	bool Initialize(HWND, HINSTANCE, int, int);
 	void Shutdown();
 
 	bool Update();		// One frame of graphics
@@ -35,10 +34,12 @@ public:
 
 private:
 	D3DClass* m_D3D;
-	CameraClass* m_Camera;
+	
 	ShaderManager* m_ShaderManager;
-
-	Model* m_Model;
-
+	
 	AmbientLight* m_AmbientLight;
+
+	CameraClass* m_Camera;
+	Model* m_Model;
+	//TextClass* m_Text;
 };

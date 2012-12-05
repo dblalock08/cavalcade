@@ -35,12 +35,13 @@ private:
 	bool InitializeSentence(SentenceType**, int, ID3D11Device*);
 	bool UpdateSentence(SentenceType*, char*, int, int, float, float, float, ID3D11DeviceContext*);
 	void ReleaseSentence(SentenceType**);
-	bool RenderSentence(ID3D11DeviceContext*, SentenceType*, XMFLOAT4X4, XMFLOAT4X4);
+	void RenderSentence(ID3D11DeviceContext*, SentenceType*, XMFLOAT4X4, XMFLOAT4X4);
 
 private:
 	FontClass* m_Font;
-	FlatTextShader* m_TextShader;
 	int m_screenWidth, m_screenHeight;
 	XMFLOAT4X4 m_baseViewMatrix;
 	SentenceType* m_sentence;
+
+	FlatTextShader* m_TextShader;
 };

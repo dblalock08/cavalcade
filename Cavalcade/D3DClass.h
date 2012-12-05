@@ -6,9 +6,11 @@
 #include <Windows.h>
 #include <xnamath.h>
 #include <D3D11.h>
-//#include <D3DX11.h>
-#include <DxErr.h>
 #include <D3Dcompiler.h>
+
+#ifdef _DEBUG
+#include <DxErr.h>
+#endif
 
 #include "settings.h"
 
@@ -33,11 +35,11 @@ public:
 
 	void GetVideoCardInfo(char*, int&);
 
-	//void ZBufferEnable();
-	//void ZBufferDisable();
+	void ZBufferEnable();
+	void ZBufferDisable();
 
-	//void AlphaBlendOn();
-	//void AlphaBlendOff();
+	void AlphaBlendOn();
+	void AlphaBlendOff();
 
 private:
 	int m_videoCardMemory;
@@ -53,8 +55,11 @@ private:
 
 	ID3D11Texture2D* m_depthStencilBuffer;
 	ID3D11DepthStencilState* m_depthStencilState;
+	ID3D11DepthStencilState* m_depthDisabledStencilState;
 	ID3D11DepthStencilView* m_depthStencilView;
 	ID3D11RasterizerState* m_rasterState;
+	ID3D11BlendState* m_alphaEnableBlendState;
+	ID3D11BlendState* m_alphaDisableBlendState;
 
 	XMFLOAT4X4 m_projectionMatrix;
 	XMFLOAT4X4 m_worldMatrix;

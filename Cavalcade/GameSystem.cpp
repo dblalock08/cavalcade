@@ -88,7 +88,7 @@ bool GameSystem::Initialize()
 	}
 	else
 	{
-		result = m_Graphics->Initialize(m_hwnd, m_hInstance);
+		result = m_Graphics->Initialize(m_hwnd, m_hInstance, screenWidth, screenHeight);
 		if (!result)
 		{
 			MessageBox(m_hwnd, L"Graphics system could not be initialized.", L"Error", MB_OK);

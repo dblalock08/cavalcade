@@ -15,9 +15,10 @@ Graphics::~Graphics()
 
 }
 
-bool Graphics::Initialize(HWND hwnd, HINSTANCE hInstance)
+bool Graphics::Initialize(HWND hwnd, HINSTANCE hInstance, int screenWidth, int screenHeight)
 {
 	bool result;
+	XMFLOAT4X4 baseViewMatrix;
 
 	m_D3D = new D3DClass;
 	if (!m_D3D)
@@ -34,6 +35,8 @@ bool Graphics::Initialize(HWND hwnd, HINSTANCE hInstance)
 
 	m_Camera->SetPosition(0.0f, 0.0f, -120.0f);
 	m_Camera->SetRotation(0.0f, 0.0f, 0.0f);
+	m_Camera->UpdateView();		// Calculate initial view matrix
+	m_Camera->GetViewMatrix(baseViewMatrix);
 
 	m_ShaderManager = new ShaderManager;
 	if (!m_ShaderManager)
@@ -42,6 +45,17 @@ bool Graphics::Initialize(HWND hwnd, HINSTANCE hInstance)
 	result = m_ShaderManager->Initialize(m_D3D->GetDevice(), hwnd);
 	if (!result)
 		return false;
+
+	// Text rendering system //
+	/*
+	m_Text = new TextClass;
+	if (!m_Text)
+		return false;
+
+	result = m_Text->Initialize(m_D3D->GetDevice(), m_D3D->GetDeviceContext(), hwnd, screenWidth, screenHeight, baseViewMatrix);
+	if (!result)
+		return false;
+	*/
 
 // Test ambient light textured model //
 	m_Model = new Model;
@@ -82,6 +96,15 @@ void Graphics::Shutdown()
 		m_Model = 0;
 	}
 
+	/*
+	if (m_Text)
+	{
+		m_Text->Shutdown();
+		delete m_Text;
+		m_Text = 0;
+	}
+	*/
+
 	if (m_ShaderManager)
 	{
 		m_ShaderManager->Shutdown();
@@ -114,7 +137,7 @@ bool Graphics::Update()
 
 void Graphics::Render()
 {
-	XMFLOAT4X4 worldMatrix, viewMatrix, projectionMatrix;
+	XMFLOAT4X4 worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
 
 	m_D3D->BeginScene();
 
@@ -123,11 +146,22 @@ void Graphics::Render()
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_D3D->GetWorldMatrix(worldMatrix);
 	m_D3D->GetProjectionMatrix(projectionMatrix);
+	m_D3D->GetOrthoMatrix(orthoMatrix);
 
-// Put models on the pipeline //
+/// Begin 2D rendering ///
+	m_D3D->ZBufferDisable();
+	m_D3D->AlphaBlendOn();
+
+	//m_Text->Render(m_D3D->GetDeviceContext(), worldMatrix, orthoMatrix);
+
+	m_D3D->AlphaBlendOn();
+	m_D3D->ZBufferEnable();
+/// End 2D rendering ///
+
+/// Begin 3D rendering ///
+	// Put models on the pipeline //
 	m_Model->Render(m_D3D->GetDeviceContext());
 
-// rotate the model //
 	m_ShaderManager->RenderAmbientColorShader(m_D3D->GetDeviceContext(), m_Model->GetIndexCount(), m_Model->GetRotationMatrix(), viewMatrix, projectionMatrix,
 											  m_Model->GetTexture(), m_AmbientLight->GetDirection(), m_AmbientLight->GetAmbientColor(),
 											  m_AmbientLight->GetDiffuseColor());
